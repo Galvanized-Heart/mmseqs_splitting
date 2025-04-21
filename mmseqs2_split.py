@@ -233,15 +233,15 @@ The minimum span of sequence required for two sequences to cluster together
 COVERAGE TYPES
 --------------
 - A query is the cluster representative
-- A target is a target member for the cluster
+- A target is a possible member for the cluster
 --------------
 Mode	Name	                    Condition Checked Against Threshold	        
-0	    Bidirectional	        	(Aligned/QueryLen AND Aligned/TargetLen) >= -c	    
+0	    Bidirectional [DEFAULT]     Aligned/QueryLen >= -c AND Aligned/TargetLen >= -c 	    
 1	    Target Coverage	        	Aligned/TargetLen >= -c	                            
 2	    Query Coverage	        	Aligned/QueryLen >= -c	                            
-3	    Target-in-Query Coverage    TargetLen >= QueryLen * -c
-4       ?                           ?
-5       ?                           ?
+3	    Target Sequence             TargetLen >= QueryLen * -c
+4       Query Sequence              QueryLen >= TargetLen * -c
+5       Short Sequence              min(TargetLen, QueryLen) >= max(TargetLen, QueryLen) * -c
 """
 
 """
