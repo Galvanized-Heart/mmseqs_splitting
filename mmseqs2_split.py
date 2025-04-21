@@ -5,12 +5,12 @@ import subprocess
 import random
 import tempfile
 
-def create_fasta_from_csv(csv_path, fasta_path):
+def create_fasta_from_csv(csv_path, seq_col, fasta_path):
     """Create FASTA file from CSV using index as headers"""
     df = pd.read_csv(csv_path)
     with open(fasta_path, 'w') as f:
         for idx, row in df.iterrows():
-            f.write(f">{idx}\n{row['SEQ']}\n")
+            f.write(f">{idx}\n{row[seq_col]}\n")
 
 def cluster_and_split(fasta_path, seq_id, split_ratios, coverage=0.8, cov_mode=1, threads=4, cluster_mode=0, seed=None,):
     """Cluster sequences and return split assignments with statistics"""
@@ -86,7 +86,7 @@ def cluster_and_split(fasta_path, seq_id, split_ratios, coverage=0.8, cov_mode=1
 
         return split_map, cluster_id_map, stats
 
-def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_ids=[0.9], coverage=0.8, cov_mode=1, cluster_mode=0, threads=4, seed=None, split_ratios=None):
+def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_ids=[0.9], coverage=0.8, cov_mode=1, cluster_mode=0, threads=4, seed=None, split_ratios=None):
     """Add split columns with fully configurable parameters"""
 
     df = pd.read_csv(input_csv_path)
@@ -116,7 +116,7 @@ def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_ids=[0.9], cover
     for seq_id in seq_ids:
         print(f"Processing seq_id: {seq_id}")
         with tempfile.NamedTemporaryFile(mode='w') as fasta_file:
-            create_fasta_from_csv(input_csv_path, fasta_file.name)
+            create_fasta_from_csv(input_csv_path, seq_col, fasta_file.name)
             split_map, cluster_map, stats = cluster_and_split(
                 fasta_file.name, 
                 seq_id,
@@ -177,6 +177,7 @@ def analyze_existing_splits(df, split_column):
 add_splits_to_csv(
     "input.csv",
     "output_with_splits.csv",
+    seq_col="SEQ",
     seq_ids=[0.9],
     split_ratios={'train': 0.8, 'valid': 0.1, 'test': 0.1},
     coverage=0.8,
@@ -187,6 +188,7 @@ add_splits_to_csv(
 
 add_splits_to_csv(
     "input.csv",
+    seq_col="SEQ",
     seq_ids=[0.7],
     split_ratios={'train': 0.8, 'valid': 0.1, 'test': 0.1},
     coverage=0.7,
