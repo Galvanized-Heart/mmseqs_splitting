@@ -27,6 +27,7 @@ def cluster_and_split(fasta_path, seq_id, split_ratios, coverage=0.8, cov_mode=1
             ["mmseqs", "createtsv", f"{tmpdir}/DB", f"{tmpdir}/DB", f"{tmpdir}/clu", f"{tmpdir}/clusters.tsv"]
         ]
         
+        # Run mmseqs2 commands
         for cmd in cmds:
             try:
                 subprocess.run(cmd, check=True)
@@ -79,6 +80,7 @@ def cluster_and_split(fasta_path, seq_id, split_ratios, coverage=0.8, cov_mode=1
             'average_cluster_size': average_size,
             'coverage': coverage,
             'cov_mode': cov_mode,
+            'cluster_mode': cluster_mode,
             'split_train': split_ratios['train'],
             'split_valid': split_ratios['valid'],
             'split_test': split_ratios['test']
@@ -86,7 +88,8 @@ def cluster_and_split(fasta_path, seq_id, split_ratios, coverage=0.8, cov_mode=1
 
         return split_map, cluster_id_map, stats
 
-def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_ids=[0.9], coverage=0.8, cov_mode=1, cluster_mode=0, threads=4, seed=None, split_ratios=None):
+def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_ids=[0.9], coverage=0.8, 
+                      cov_mode=0, cluster_mode=0, threads=4, seed=None, split_ratios=None):
     """Add split columns with fully configurable parameters"""
 
     df = pd.read_csv(input_csv_path)
@@ -113,21 +116,27 @@ def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_i
         with open(stats_path, 'w') as f:
             f.write("seq_id,coverage,cov_mode,cluster_mode,train%,valid%,test%,num_clusters,avg_cluster_size\n")
 
+    # Cluster sequences
     for seq_id in seq_ids:
         print(f"Processing seq_id: {seq_id}")
+        # Store mmseqs DB and clu files in a temp file
         with tempfile.NamedTemporaryFile(mode='w') as fasta_file:
+            # Create fasta to be used by mmseqs
             create_fasta_from_csv(input_csv_path, seq_col, fasta_file.name)
+
+            # Get split and cluster mappings for data points in csv, and clustering stats
             split_map, cluster_map, stats = cluster_and_split(
-                fasta_file.name, 
-                seq_id,
-                split_ratios,
-                seed=seed,
-                coverage=coverage,
-                cov_mode=cov_mode,
-                cluster_mode=cluster_mode,
-                threads=threads
-            )
+                                                                fasta_file.name, 
+                                                                seq_id,
+                                                                split_ratios,
+                                                                seed=seed,
+                                                                coverage=coverage,
+                                                                cov_mode=cov_mode,
+                                                                cluster_mode=cluster_mode,
+                                                                threads=threads
+                                                            )
             
+            # Create columns for cluster ID and split set
             col_name = (
                 f"_seqid{int(seq_id*100)}_"
                 f"cov{int(coverage*100)}_"
@@ -135,10 +144,10 @@ def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_i
                 f"cluster_mode{cluster_mode}_"
                 f"tr{int(split_ratios['train']*100)}_va{int(split_ratios['valid']*100)}_ts{int(split_ratios['test']*100)}"
             )
-            
             df["cluster"+col_name] = df.index.astype(str).map(cluster_map)
             df["split"+col_name] = df.index.astype(str).map(split_map)
 
+            # Write clustering stats
             with open(stats_path, 'a') as f:
                 f.write(
                     f"{seq_id},{coverage},{cov_mode},{cluster_mode}"
@@ -146,13 +155,14 @@ def add_splits_to_csv(input_csv_path, output_csv_path=None, seq_col="SEQ", seq_i
                     f"{stats['num_clusters']},{stats['average_cluster_size']}\n"
                 )
 
+    # Save csv with cluster mappings and splits
     df.to_csv(output_csv_path, index=False)
     return df
 
-def analyze_existing_splits(df, split_column):
+def analyze_existing_splits(df, cluster_column):
     """Calculate cluster statistics from existing split column"""
     # Reconstruct cluster assignments
-    clusters = df.groupby(split_column).apply(lambda x: list(x.index.astype(str)))
+    clusters = df.groupby(cluster_column).apply(lambda x: list(x.index.astype(str)))
     
     stats = {
         'num_clusters': len(clusters),
@@ -164,7 +174,7 @@ def analyze_existing_splits(df, split_column):
     # Plot cluster size distribution
     plt.figure()
     pd.Series(clusters.apply(len)).hist(bins=30)
-    plt.title(f"Cluster Sizes - {split_column}")
+    plt.title(f"Cluster Sizes - {cluster_column}")
     plt.show()
     
     return stats
