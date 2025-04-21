@@ -148,6 +148,9 @@ This provides:
 - Maximum cluster size
 - A histogram of cluster sizes
 
+## License
+MIT License 2025
+
 ## References
 
 - MMSeqs2: https://github.com/soedinglab/MMseqs2
