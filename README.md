@@ -100,10 +100,12 @@ The minimum fraction of sequence that must be aligned. Values range from 0.0 to 
 
 ### Coverage Mode (`--cov-mode`)
 Controls how coverage is calculated:
-- 0: Bidirectional (both query and target coverage must meet threshold)
-- 1: Target Coverage (useful for finding full-length homologs)
-- 2: Query Coverage (useful for domain-level clustering)
-- 3: Target-in-Query Coverage (useful for short motif detection)
+- 0: Bidirectional - Aligned/QueryLen >= -c AND Aligned/TargetLen >= -c
+- 1: Target Coverage - Aligned/TargetLen >= -c
+- 2: Query Coverage - Aligned/QueryLen >= -c
+- 3: Target-in-Query Coverage - TargetLen >= QueryLen * -c
+- 4: Query-in-Target Coverage - QueryLen >= TargetLen * -c
+- 5: Shotest-in-Longest Coverage - min(TargetLen, QueryLen) >= max(TargetLen, QueryLen) * -c
 
 ### Cluster Mode (`--cluster-mode`)
 Determines the clustering algorithm:
